@@ -2,14 +2,14 @@ for $xml in doc("{XmlFile}")
     for $Buildings in $xml//NWindDataSet/Buildings
         for $Build in $xml//NWindDataSet/Build
             for $Room in $xml//NWindDataSet/Room
-            order by number($Room/FloorOrder), $Room/RoomFullName
+            order by $Room/RoomFullName,number($Room/SortNum)--变更为：户室名称和不动产单元号（Fxxxx）的排序方式
     return <result 
         户层次="{substring($Room/AddFloorName, 1, string-length($Room/AddFloorName) - 1)}" 
 		户号="{$Room/SortNum}" 
 		户室号="{$Room/RoomFullName}" 
         房屋编码="{$Room/FWBM}"
 		
-        房屋坐落="{concat($Build/Address,$Room/RoomFullName)}" 复式坐落与主实体显示相同，因此改成幢坐落+户名称的方式
+        房屋坐落="{concat($Build/Address,$Room/RoomFullName)}"
 		
         房屋性质="{$Room/KZProperty}"
 		户建筑面积="{$Room/ArchArea}"
