@@ -9,7 +9,7 @@ for $xml in doc("{XmlFile}")
 		户室号="{$Room/RoomFullName}" 
         房屋编码="{$Room/FWBM}"
 		
-        房屋坐落="{concat($Build/Address,$Room/RoomFullName)}" 
+        房屋坐落="{concat($Build/Address,$Room/RoomFullName)}" 复式坐落与主实体显示相同，因此改成幢坐落+户名称的方式
 		
         房屋性质="{$Room/KZProperty}"
 		户建筑面积="{$Room/ArchArea}"
