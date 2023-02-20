@@ -1,0 +1,11 @@
+for $xml in doc("{XmlFile}")
+            for $Room in $xml//NWindDataSet/Room[CoeffName = '[SUBCON]']
+            order by number($Room/FloorOrder), $Room/RoomFullName
+            return <result 
+                分摊系数户室号="{$Room/RoomFullName}" 
+                分摊系数户计算式="{$Room/AreaFormular}" 
+                分摊系数户套内面积="{if(contains($Room/SetInArea,'0.00')) then (replace($Room/SetInArea,"0.00","")) else ($Room/SetInArea)}"
+                分摊系数户分摊面积="{if(contains($Room/AppArea,'0.00')) then (replace($Room/AppArea,"0.00","")) else ($Room/AppArea)}" 
+                分摊系数户建筑面积="{if(contains($Room/ArchArea,'0.00')) then (replace($Room/ArchArea,"0.00","")) else ($Room/ArchArea)}"
+                分摊系数="{$Room/CoeffFormular}"
+            />
