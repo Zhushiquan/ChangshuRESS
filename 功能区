@@ -1,0 +1,14 @@
+for $xml in doc("{XmlFile}")
+    for $Regions in $xml//NWindDataSet/RegionsInfo/Regions[IsFundtionRegion=1]
+        order by $Regions/FullName
+        return <result 
+            其中="其中" 
+            一="{$Regions/FullName}" 
+            套内面积="{$Regions/SetInArea}" 
+            分摊面积="{$Regions/AppArea}"
+            二="{$Regions/ArchArea}"
+            三="{$Regions/MembersCount}"
+            CoeffName="{$Regions/CoeffName}"
+            CoeffFormular="{$Regions/CoeffFormular}"
+            ResultCoeff="{$Regions/ResultCoeff}"
+                />
