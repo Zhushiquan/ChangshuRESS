@@ -3,10 +3,11 @@ for $xml in doc("{XmlFile}")
 let $Room := $xml//NWindDataSet/Room
 
 for $用途 in distinct-values($Room/用途)
-let $ArchArea := $Room[用途=$用途]    
+let $ArchArea := $Room[用途=$用途]  
+let $RoomLocation := $Room[用途=$用途 and (IsFushi = '否')]  
         return <result
             其中="其中"    
             户用途="{$用途}"          
-            户建筑面积="{round-half-to-even(sum($ArchArea/ArchArea),2)}"  
-            户套数="{count($ArchArea） and (IsFushi = '否')}"		
+            户建筑面积="{round-half-to-even(sum($ArchArea/ArchArea),2)}"
+            户套数="{count($RoomLocation)}"		
                 />
