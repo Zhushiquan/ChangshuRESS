@@ -1,0 +1,66 @@
+--共享前置库user_zgj/zgj123456@2.34.102.32:1521/ORCL
+--创建数据库链接TO_QZK
+CREATE database LINK TOQZK
+CONNECT TO "user_zgj" IDENTIFIED BY "zgj123456"
+USING '(DESCRIPTION = 
+         (ADDRESS = (PROTOCOL = TCP)(HOST = 2.34.102.32)(PORT = 1521))
+         (CONNECT_DATA = (SERVER = DEDICATED)(SERVICE_NAME = ORCL))
+       )';
+
+
+--创建存储过程push_data_to_qzk
+CREATE OR REPLACE PROCEDURE push_ress_to_qzk AS
+BEGIN
+ INSERT INTO ch_lpb@TO_QZK
+
+  SELECT
+  cast(MAX(h.SERIAL_NUMBER) as NVARCHAR2(20)) as BLDCODE,
+      cast(MAX(h.BDCDYH) as NVARCHAR2(29)) as BUILDDAIMA,
+             cast(MAX(h.SXH) as NVARCHAR2(36)) as mainid,
+       cast(MAX(z.ZRZH) as NVARCHAR2(50)) as BLDNO,
+       cast(MAX(h.FJH) as NVARCHAR2(50)) as DOORNO,
+      cast(MAX(h.ZL) as NVARCHAR2(250)) as ADDRESS,
+      cast(MAX(w.EXETIME) as DATE) as GXRQ,
+      cast(MAX(h.DYCS|| '层') as NVARCHAR2(250)) as CH,
+       cast(to_char(SUM(h.SCJZMJ)) AS NVARCHAR2(250)) as JZMJ,
+       cast(to_char(SUM(h.SCTNJZMJ)) AS NVARCHAR2(250)) as TNMJ
+from fw_hs h
+join fw_ljz z on h.FW_DCB_INDEX = z.FW_DCB_INDEX
+join workinfo w on h.SERIAL_NUMBER = w.SERIAL_NUMBER
+where
+w.ISYUCE = 0 and w.zrzlx = '商品房'
+ group by h.fwbm
+ UNION ALL
+select
+       cast(ljz.SERIAL_NUMBER as NVARCHAR2(20)) as BLDCODE,
+       cast(ljz.LSZD|| 'F99990001' as NVARCHAR2(29)) as BUILDDAIMA,
+      cast('1' as NVARCHAR2(36)) as mainid,
+     cast(ljz.ZRZH as NVARCHAR2(50)) as BLDNO,
+      cast(ljz.FWMC as NVARCHAR2(50)) as DOORNO,
+       cast(ljz.ZLDZ as NVARCHAR2(250)) as ADDRESS,
+       cast(w.EXETIME as DATE) as GXRQ,
+       cast(ljz.FWCS|| '层' as NVARCHAR2(250)) as CH,
+       cast(to_char(ljz.scjzmj) as NVARCHAR2(250)) as JZMJ,
+       cast(to_char(ljz.scjzmj) as NVARCHAR2(250)) as TNMJ
+from fw_ljz ljz
+join workinfo w on w.SERIAL_NUMBER = ljz.SERIAL_NUMBER
+where ljz.bdcdyfwlx = 1;
+END;
+
+
+
+--创建任务
+ BEGIN
+  DBMS_SCHEDULER.CREATE_JOB(
+    job_name => 'push_CHLPB_job',
+    job_type => 'STORED_PROCEDURE',
+    job_action => 'push_data_to_qzk',
+    start_date => TRUNC(SYSDATE) + INTERVAL '0' HOUR,
+    repeat_interval => 'FREQ=DAILY; BYHOUR=0; BYMINUTE=0; BYSECOND=0',
+    enabled => TRUE
+  );
+END;
+
+BEGIN
+  DBMS_SCHEDULER.ENABLE('push_CHLPB_job');
+END;
