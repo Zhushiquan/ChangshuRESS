@@ -1,5 +1,5 @@
 --共享前置库user_zgj/zgj123456@2.34.102.32:1521/ORCL
---创建数据库链接TO_QZK
+--创建数据库链接TOQZK
 CREATE database LINK TOQZK
 CONNECT TO "user_zgj" IDENTIFIED BY "zgj123456"
 USING '(DESCRIPTION = 
@@ -11,9 +11,8 @@ USING '(DESCRIPTION =
 --创建存储过程push_data_to_qzk
 CREATE OR REPLACE PROCEDURE push_ress_to_qzk AS
 BEGIN
- INSERT INTO ch_lpb@TO_QZK
-
-  SELECT
+INSERT INTO CH_LPB@TOQZK
+  SELECT          --查询商品房
   cast(MAX(h.SERIAL_NUMBER) as NVARCHAR2(20)) as BLDCODE,
       cast(MAX(h.BDCDYH) as NVARCHAR2(29)) as BUILDDAIMA,
              cast(MAX(h.SXH) as NVARCHAR2(36)) as mainid,
@@ -28,10 +27,14 @@ from fw_hs h
 join fw_ljz z on h.FW_DCB_INDEX = z.FW_DCB_INDEX
 join workinfo w on h.SERIAL_NUMBER = w.SERIAL_NUMBER
 where
-w.ISYUCE = 0 and w.zrzlx = '商品房'
- group by h.fwbm
+w.ISYUCE = 0 and w.zrzlx = '商品房' and h.BDCDYH is not null               --只推送主实体，复式关系面积合并输出
+ and NOT EXISTS (SELECT 1 FROM CH_LPB@TOQZK t                  --通过业务号和单元号避免重复推送
+  WHERE t.BLDCODE = h.SERIAL_NUMBER AND t.BUILDDAIMA = h.BDCDYH)
+group by h.fwbm
+
  UNION ALL
-select
+ 
+select            --查询单位房
        cast(ljz.SERIAL_NUMBER as NVARCHAR2(20)) as BLDCODE,
        cast(ljz.LSZD|| 'F99990001' as NVARCHAR2(29)) as BUILDDAIMA,
       cast('1' as NVARCHAR2(36)) as mainid,
@@ -44,12 +47,13 @@ select
        cast(to_char(ljz.scjzmj) as NVARCHAR2(250)) as TNMJ
 from fw_ljz ljz
 join workinfo w on w.SERIAL_NUMBER = ljz.SERIAL_NUMBER
-where ljz.bdcdyfwlx = 1;
+where ljz.bdcdyfwlx = 1 
+and NOT EXISTS (SELECT 1 FROM CH_LPB@TOQZK t
+  WHERE t.BLDCODE = ljz.SERIAL_NUMBER AND t.BUILDDAIMA = ljz.LSZD|| 'F99990001');--通过业务号和单元号避免重复推送
 END;
 
 
-
---创建任务
+--创建任务，每天0点推送
  BEGIN
   DBMS_SCHEDULER.CREATE_JOB(
     job_name => 'push_CHLPB_job',
