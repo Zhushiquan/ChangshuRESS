@@ -1,0 +1,24 @@
+CREATE OR REPLACE PROCEDURE backup_RESSDBA AS
+BEGIN
+  -- 获取当前时间
+	sysdate_var := TO_CHAR(SYSDATE, 'YYYY_MM_DD');
+  -- 执行备份操作，使用EXPDP命令备份数据库
+	EXECUTE IMMEDIATE 'expdp RESSDBA/RESSDBA@172.27.55.2:1521/ORCL DIRECTORY=backup_dir DUMPFILE=' || 'RESSDBA' || '_' || sysdate_var || '.dmp 
+	LOGFILE=' || 'RESSDBA' || '_' || sysdate_var || '.log FULL=Y';
+END;
+
+
+CREATE OR REPLACE DIRECTORY backup_dir AS 'E:\oracle_backup';
+
+
+BEGIN
+  -- 创建一个每天凌晨1点执行备份的任务
+  DBMS_SCHEDULER.CREATE_JOB (
+    job_name        => 'backup_RESSDBA_job',
+    job_type        => 'PLSQL_BLOCK',
+    job_action      => 'BEGIN backup_RESSDBA; END;',
+    start_date      => SYSTIMESTAMP,
+    repeat_interval => 'FREQ=DAILY;BYHOUR=1;',
+    enabled         => TRUE
+  );
+END;
